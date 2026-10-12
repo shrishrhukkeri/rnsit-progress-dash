@@ -2,12 +2,14 @@
 
 Mobile-first PWA for tracking milestones across **NEXA**, **Concierge**, and **VarchLearn**.
 
+**Live:** https://rnsit-progress-dash.onrender.com  
+**Repo:** https://github.com/shrishrhukkeri/rnsit-progress-dash
+
 ## Features
 - No login required to **view** progress (faculty / supervisors)
 - Student **login** required to mark milestones, add delay reasons, and achievement notes
 - Light mode by default; dark mode toggle (top right)
-- Home: overall progress ring + 3 project cards
-- Project detail: completed / pending / delayed + full roadmap
+- Home: 3 project cards → project roadmap → Back
 - Offline-capable via service worker (vite-plugin-pwa)
 
 ## Demo credentials
@@ -16,15 +18,15 @@ Mobile-first PWA for tracking milestones across **NEXA**, **Concierge**, and **V
 
 ## Run
 ```bash
-cd dashboard
 npm install
 npm run dev
 ```
-
-Open the local URL on a phone or Chrome device mode. Use “Add to Home Screen” for PWA install.
 
 ## Build
 ```bash
 npm run build
 npm run preview
 ```
+
+## Deploy (Render)
+Static site auto-deploys from `main`. Config in `render.yaml` (SPA rewrite `/*` → `/index.html`).
