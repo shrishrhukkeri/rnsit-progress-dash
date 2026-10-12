@@ -11,6 +11,7 @@ export function EditMilestoneModal() {
     isAuthenticated,
     setLoginOpen,
     updateMilestone,
+    removeMilestone,
   } = useAppStore()
 
   const found = useMemo(() => {
@@ -22,6 +23,10 @@ export function EditMilestoneModal() {
     return null
   }, [editingMilestoneId, projects])
 
+  const [title, setTitle] = useState('')
+  const [weekLabel, setWeekLabel] = useState('')
+  const [theme, setTheme] = useState('')
+  const [exitCriteria, setExitCriteria] = useState('')
   const [status, setStatus] = useState<MilestoneStatus>('pending')
   const [achievementNote, setAchievementNote] = useState('')
   const [delayReason, setDelayReason] = useState('')
@@ -29,6 +34,10 @@ export function EditMilestoneModal() {
 
   useEffect(() => {
     if (!found) return
+    setTitle(found.milestone.title)
+    setWeekLabel(found.milestone.weekLabel)
+    setTheme(found.milestone.theme)
+    setExitCriteria(found.milestone.exitCriteria)
     setStatus(found.milestone.status)
     setAchievementNote(found.milestone.achievementNote ?? '')
     setDelayReason(found.milestone.delayReason ?? '')
@@ -42,10 +51,7 @@ export function EditMilestoneModal() {
       <div className="modal-backdrop" onClick={() => setEditingMilestone(null)}>
         <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
           <h2>Login required</h2>
-          <p className="sub">
-            Faculty and supervisors can view progress freely. Students must log in to
-            update milestones.
-          </p>
+          <p className="sub">Sign in to edit milestones and timeline details.</p>
           <div className="modal-actions">
             <button type="button" className="btn ghost" onClick={() => setEditingMilestone(null)}>
               Cancel
@@ -69,6 +75,10 @@ export function EditMilestoneModal() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     const res = updateMilestone(found.projectId, found.milestone.id, {
+      title,
+      weekLabel,
+      theme,
+      exitCriteria,
       status,
       achievementNote,
       delayReason,
@@ -76,15 +86,49 @@ export function EditMilestoneModal() {
     if (!res.ok) setError(res.error ?? 'Could not save')
   }
 
+  const onRemove = () => {
+    if (!window.confirm(`Remove “${found.milestone.title}” from the timeline?`)) return
+    const res = removeMilestone(found.projectId, found.milestone.id)
+    if (!res.ok) setError(res.error ?? 'Could not remove')
+  }
+
   return (
     <div className="modal-backdrop" onClick={() => setEditingMilestone(null)}>
       <div className="modal-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
         <form onSubmit={onSubmit}>
-          <h2>Update milestone</h2>
-          <p className="sub">
-            {found.projectName} · {found.milestone.weekLabel} — {found.milestone.title}
-          </p>
+          <h2>Edit milestone</h2>
+          <p className="sub">{found.projectName}</p>
           {error ? <p className="error">{error}</p> : null}
+          <div className="field">
+            <label htmlFor="edit-week">Week / phase</label>
+            <input
+              id="edit-week"
+              value={weekLabel}
+              onChange={(e) => setWeekLabel(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-title">Title</label>
+            <input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-theme">Theme</label>
+            <input id="edit-theme" value={theme} onChange={(e) => setTheme(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-exit">Exit criteria</label>
+            <textarea
+              id="edit-exit"
+              value={exitCriteria}
+              onChange={(e) => setExitCriteria(e.target.value)}
+            />
+          </div>
           <div className="field">
             <label htmlFor="status">Status</label>
             <select
@@ -123,11 +167,14 @@ export function EditMilestoneModal() {
             </div>
           ) : null}
           <div className="modal-actions">
+            <button type="button" className="btn ghost danger-text" onClick={onRemove}>
+              Remove
+            </button>
             <button type="button" className="btn ghost" onClick={() => setEditingMilestone(null)}>
               Cancel
             </button>
             <button type="submit" className="btn primary">
-              Save update
+              Save
             </button>
           </div>
         </form>

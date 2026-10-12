@@ -604,6 +604,52 @@ a {
   color: var(--accent);
 }
 
+.edit-btn.danger-outline {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.danger-text {
+  color: var(--danger) !important;
+}
+
+.duration-editor {
+  margin-top: 10px;
+}
+
+.duration-editor label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.duration-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.duration-row input {
+  flex: 1;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.duration-msg {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AddMilestoneModal } from '../components/AddMilestoneModal'
 import { ProgressRing } from '../components/ProgressRing'
 import { ThemeToggle } from '../components/ThemeToggle'
 import type { ProjectId } from '../types'
@@ -14,15 +16,24 @@ export function ProjectPage() {
     setEditingMilestone,
     setLoginOpen,
     logout,
+    updateProjectDuration,
+    removeMilestone,
   } = useAppStore()
   const project = getProject(projectId)
+  const [durationDraft, setDurationDraft] = useState('')
+  const [durationMsg, setDurationMsg] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
+
+  useEffect(() => {
+    if (project) setDurationDraft(project.duration)
+  }, [project?.id, project?.duration])
 
   if (!project) {
     return (
       <div className="page">
         <p className="empty-hint">Project not found.</p>
         <Link to="/" className="back-link">
-          ← Back to dashboard
+          ← Back
         </Link>
       </div>
     )
@@ -30,6 +41,12 @@ export function ProjectPage() {
 
   const stats = projectStats(project.id)
   const sorted = [...project.milestones].sort((a, b) => a.order - b.order)
+
+  const saveDuration = () => {
+    const res = updateProjectDuration(project.id, durationDraft)
+    setDurationMsg(res.ok ? 'Duration saved' : res.error ?? 'Could not save')
+    if (res.ok) window.setTimeout(() => setDurationMsg(''), 1800)
+  }
 
   return (
     <div className="page">
@@ -67,11 +84,31 @@ export function ProjectPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
           <div>
             <h1>{project.name}</h1>
-            <p className="meta">
-              {project.tagline}
-              <br />
-              {project.duration} · {project.teamHint}
-            </p>
+            <p className="meta">{project.tagline}</p>
+            {isAuthenticated ? (
+              <div className="duration-editor">
+                <label htmlFor="project-duration">Duration</label>
+                <div className="duration-row">
+                  <input
+                    id="project-duration"
+                    value={durationDraft}
+                    onChange={(e) => setDurationDraft(e.target.value)}
+                    placeholder="e.g. 6 weeks"
+                  />
+                  <button type="button" className="edit-btn" onClick={saveDuration}>
+                    Save
+                  </button>
+                </div>
+                {durationMsg ? <span className="duration-msg">{durationMsg}</span> : null}
+                <p className="meta" style={{ marginTop: 8 }}>
+                  {project.teamHint}
+                </p>
+              </div>
+            ) : (
+              <p className="meta">
+                {project.duration} · {project.teamHint}
+              </p>
+            )}
           </div>
           <div style={{ position: 'relative', width: 88, height: 88 }}>
             <ProgressRing percent={stats.percent} size={88} stroke={7} />
@@ -113,9 +150,13 @@ export function ProjectPage() {
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 12px', gap: 8 }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Roadmap</h2>
-        {isAuthenticated ? <span className="pill">Edit mode</span> : null}
+        {isAuthenticated ? (
+          <button type="button" className="edit-btn" onClick={() => setAddOpen(true)}>
+            + Add milestone
+          </button>
+        ) : null}
       </div>
 
       <div className="roadmap">
@@ -173,10 +214,13 @@ export function ProjectPage() {
                   </button>
                   <button
                     type="button"
-                    className="edit-btn ghost"
-                    onClick={() => setEditingMilestone(m.id)}
+                    className="edit-btn ghost danger-outline"
+                    onClick={() => {
+                      if (!window.confirm(`Remove “${m.title}”?`)) return
+                      removeMilestone(project.id, m.id)
+                    }}
                   >
-                    Add comments
+                    Remove
                   </button>
                 </div>
               ) : null}
@@ -184,6 +228,12 @@ export function ProjectPage() {
           </article>
         ))}
       </div>
+
+      <AddMilestoneModal
+        projectId={project.id}
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+      />
     </div>
   )
 }

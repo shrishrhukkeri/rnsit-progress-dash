@@ -5,6 +5,27 @@ import { STUDENT_PASS, STUDENT_USER, seedProjects } from '../data/seed'
 
 type ThemeMode = 'light' | 'dark'
 
+type MilestonePatch = Partial<
+  Pick<
+    Milestone,
+    | 'status'
+    | 'achievementNote'
+    | 'delayReason'
+    | 'title'
+    | 'theme'
+    | 'weekLabel'
+    | 'exitCriteria'
+    | 'order'
+  >
+>
+
+type NewMilestoneInput = {
+  title: string
+  theme?: string
+  weekLabel: string
+  exitCriteria?: string
+}
+
 type AppState = {
   theme: ThemeMode
   isAuthenticated: boolean
@@ -17,10 +38,16 @@ type AppState = {
   setEditingMilestone: (id: string | null) => void
   login: (username: string, password: string) => { ok: boolean; error?: string }
   logout: () => void
+  updateProjectDuration: (projectId: ProjectId, duration: string) => { ok: boolean; error?: string }
+  addMilestone: (
+    projectId: ProjectId,
+    input: NewMilestoneInput,
+  ) => { ok: boolean; error?: string; id?: string }
+  removeMilestone: (projectId: ProjectId, milestoneId: string) => { ok: boolean; error?: string }
   updateMilestone: (
     projectId: ProjectId,
     milestoneId: string,
-    patch: Partial<Pick<Milestone, 'status' | 'achievementNote' | 'delayReason'>>,
+    patch: MilestonePatch,
   ) => { ok: boolean; error?: string }
   getProject: (id: ProjectId) => Project | undefined
   projectStats: (id: ProjectId) => {
@@ -41,18 +68,33 @@ function applyHtmlTheme(theme: ThemeMode) {
     ?.setAttribute('content', theme === 'dark' ? '#121212' : '#4B7BFF')
 }
 
+/** Keep brand/meta from seed; prefer saved duration + full milestone list (team edits). */
 function mergeProjectsWithSeed(saved: Project[] | undefined): Project[] {
   return seedProjects.map((seed) => {
     const existing = saved?.find((p) => p.id === seed.id)
     if (!existing) return structuredClone(seed)
+    const milestones =
+      existing.milestones?.length > 0
+        ? existing.milestones.map((m, i) => ({
+            ...m,
+            order: typeof m.order === 'number' ? m.order : i + 1,
+          }))
+        : structuredClone(seed.milestones)
     return {
       ...seed,
-      milestones: seed.milestones.map((sm) => {
-        const em = existing.milestones.find((m) => m.id === sm.id)
-        return em ? { ...sm, ...em, title: sm.title, theme: sm.theme, weekLabel: sm.weekLabel, exitCriteria: sm.exitCriteria, order: sm.order } : sm
-      }),
+      duration: existing.duration?.trim() ? existing.duration : seed.duration,
+      teamHint: existing.teamHint?.trim() ? existing.teamHint : seed.teamHint,
+      endResult: existing.endResult?.trim() ? existing.endResult : seed.endResult,
+      milestones,
     }
   })
+}
+
+function requireAuth(get: () => AppState) {
+  if (!get().isAuthenticated) {
+    return { ok: false as const, error: 'Login required to edit the timeline' }
+  }
+  return null
 }
 
 export const useAppStore = create<AppState>()(
@@ -84,16 +126,98 @@ export const useAppStore = create<AppState>()(
 
       logout: () => set({ isAuthenticated: false, editorName: '', editingMilestoneId: null }),
 
-      updateMilestone: (projectId, milestoneId, patch) => {
-        if (!get().isAuthenticated) {
-          return { ok: false, error: 'Login required to edit milestones' }
+      updateProjectDuration: (projectId, duration) => {
+        const blocked = requireAuth(get)
+        if (blocked) return blocked
+        const next = duration.trim()
+        if (!next) return { ok: false, error: 'Duration cannot be empty' }
+
+        set({
+          projects: get().projects.map((p) =>
+            p.id === projectId ? { ...p, duration: next } : p,
+          ),
+        })
+        return { ok: true }
+      },
+
+      addMilestone: (projectId, input) => {
+        const blocked = requireAuth(get)
+        if (blocked) return blocked
+
+        const title = input.title.trim()
+        const weekLabel = input.weekLabel.trim()
+        if (!title) return { ok: false, error: 'Title is required' }
+        if (!weekLabel) return { ok: false, error: 'Week / phase label is required' }
+
+        const project = get().projects.find((p) => p.id === projectId)
+        if (!project) return { ok: false, error: 'Project not found' }
+
+        const now = new Date().toISOString()
+        const order =
+          project.milestones.reduce((max, m) => Math.max(max, m.order), 0) + 1
+        const id = `${projectId}-custom-${Date.now().toString(36)}`
+
+        const milestone: Milestone = {
+          id,
+          title,
+          theme: input.theme?.trim() || 'Team-added milestone',
+          weekLabel,
+          order,
+          status: 'pending',
+          exitCriteria: input.exitCriteria?.trim() || 'Define exit criteria with the team',
+          updatedAt: now,
+          updatedBy: get().editorName || 'Student',
         }
+
+        set({
+          projects: get().projects.map((p) =>
+            p.id === projectId
+              ? { ...p, milestones: [...p.milestones, milestone] }
+              : p,
+          ),
+        })
+        return { ok: true, id }
+      },
+
+      removeMilestone: (projectId, milestoneId) => {
+        const blocked = requireAuth(get)
+        if (blocked) return blocked
+
+        const project = get().projects.find((p) => p.id === projectId)
+        if (!project) return { ok: false, error: 'Project not found' }
+        if (project.milestones.length <= 1) {
+          return { ok: false, error: 'Keep at least one milestone on the timeline' }
+        }
+
+        set({
+          projects: get().projects.map((p) => {
+            if (p.id !== projectId) return p
+            const remaining = p.milestones
+              .filter((m) => m.id !== milestoneId)
+              .map((m, i) => ({ ...m, order: i + 1 }))
+            return { ...p, milestones: remaining }
+          }),
+          editingMilestoneId:
+            get().editingMilestoneId === milestoneId ? null : get().editingMilestoneId,
+        })
+        return { ok: true }
+      },
+
+      updateMilestone: (projectId, milestoneId, patch) => {
+        const blocked = requireAuth(get)
+        if (blocked) return blocked
 
         if (patch.status === 'delayed' && !patch.delayReason?.trim()) {
           return { ok: false, error: 'Delay reason is required when a milestone is delayed' }
         }
         if (patch.status === 'completed' && !patch.achievementNote?.trim()) {
           return { ok: false, error: 'Add a short description of what was achieved' }
+        }
+        if (patch.title !== undefined && !patch.title.trim()) {
+          return { ok: false, error: 'Title cannot be empty' }
+        }
+        if (patch.weekLabel !== undefined && !patch.weekLabel.trim()) {
+          return { ok: false, error: 'Week label cannot be empty' }
         }
 
         const now = new Date().toISOString()
@@ -110,6 +234,10 @@ export const useAppStore = create<AppState>()(
                 return {
                   ...m,
                   ...patch,
+                  title: patch.title?.trim() ?? m.title,
+                  theme: patch.theme?.trim() ?? m.theme,
+                  weekLabel: patch.weekLabel?.trim() ?? m.weekLabel,
+                  exitCriteria: patch.exitCriteria?.trim() ?? m.exitCriteria,
                   status: nextStatus,
                   delayReason:
                     nextStatus === 'delayed'
@@ -153,7 +281,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'rnsit-progress-dash',
+      name: 'rnsit-progress-dash-v2',
       partialize: (s) => ({
         theme: s.theme,
         isAuthenticated: s.isAuthenticated,
