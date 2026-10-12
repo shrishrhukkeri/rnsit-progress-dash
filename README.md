@@ -28,5 +28,9 @@ npm run build
 npm run preview
 ```
 
+## Health check
+`GET /health` → `{ "status": "ok", ... }` — use for Render cron / uptime pings:
+`https://rnsit-progress-dash.onrender.com/health`
+
 ## Deploy (Render)
-Static site auto-deploys from `main`. Config in `render.yaml` (SPA rewrite `/*` → `/index.html`).
+Node web service auto-deploys from `main` (`npm ci && npm run build` → `npm start`). See `render.yaml`.
