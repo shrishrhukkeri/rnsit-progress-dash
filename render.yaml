@@ -9,3 +9,13 @@ services:
     startCommand: npm start
     autoDeployTrigger: commit
     healthCheckPath: /health
+
+  # Optional keep-alive (Render Cron Jobs require a paid plan).
+  # Or use https://cron-job.org → GET https://rnsit-progress-dash.onrender.com/health every 10 min.
+  # - type: cron
+  #   name: rnsit-progress-dash-keepalive
+  #   runtime: node
+  #   plan: starter
+  #   schedule: "*/10 * * * *"
+  #   buildCommand: "true"
+  #   startCommand: "node -e \"fetch('https://rnsit-progress-dash.onrender.com/health').then(r=>r.json()).then(console.log)\""

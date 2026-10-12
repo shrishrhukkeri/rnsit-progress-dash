@@ -30,10 +30,18 @@ function sendJson(res, status, body) {
   res.end(payload)
 }
 
-function sendFile(res, filePath) {
+function sendFile(res, filePath, method = 'GET') {
   const ext = path.extname(filePath).toLowerCase()
   const type = mime[ext] || 'application/octet-stream'
-  res.writeHead(200, { 'Content-Type': type })
+  const stat = fs.statSync(filePath)
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Content-Length': stat.size,
+  })
+  if (method === 'HEAD') {
+    res.end()
+    return
+  }
   fs.createReadStream(filePath).pipe(res)
 }
 
@@ -59,13 +67,13 @@ const server = http.createServer((req, res) => {
   const candidate = path.join(distDir, safePath === '/' ? 'index.html' : safePath)
 
   if (candidate.startsWith(distDir) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-    return sendFile(res, candidate)
+    return sendFile(res, candidate, req.method)
   }
 
   // SPA fallback
   const indexHtml = path.join(distDir, 'index.html')
   if (fs.existsSync(indexHtml)) {
-    return sendFile(res, indexHtml)
+    return sendFile(res, indexHtml, req.method)
   }
 
   sendJson(res, 503, { status: 'error', message: 'App build missing (dist/)' })

@@ -29,8 +29,13 @@ npm run preview
 ```
 
 ## Health check
-`GET /health` → `{ "status": "ok", ... }` — use for Render cron / uptime pings:
-`https://rnsit-progress-dash.onrender.com/health`
+`GET /health` → `{ "status": "ok", "service": "...", "uptime": N, "timestamp": "..." }`
+
+Cron URL (every 5–10 min keeps free web service warm):
+```text
+https://rnsit-progress-dash.onrender.com/health
+```
+Use cron-job.org / UptimeRobot, or a paid Render Cron Job.
 
 ## Deploy (Render)
 Node web service auto-deploys from `main` (`npm ci && npm run build` → `npm start`). See `render.yaml`.
