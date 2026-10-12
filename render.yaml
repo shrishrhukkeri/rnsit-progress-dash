@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: rnsit-progress-dash
+    runtime: static
+    repo: https://github.com/shrishrhukkeri/rnsit-progress-dash
+    branch: main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
