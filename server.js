@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, 'dist')
 const port = Number(process.env.PORT) || 4173
 const dataFilePath = path.join(__dirname, 'server-data.json')
+const csvFilePath = path.join(__dirname, 'server-data.csv')
 const seedFilePath = path.join(__dirname, 'src', 'data', 'defaultProjects.json')
 
 const mime = {
@@ -14,6 +15,7 @@ const mime = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.csv': 'text/csv; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
@@ -95,6 +97,47 @@ function getSeedProjects() {
   return []
 }
 
+function projectsToCsv(projects) {
+  const headers = [
+    'Project ID',
+    'Project Name',
+    'Duration',
+    'Week Label',
+    'Milestone Title',
+    'Status',
+    'Achievement Note',
+    'Delay Reason',
+    'Updated At',
+    'Updated By',
+  ]
+  const rows = [headers.join(',')]
+
+  function escapeCsv(str) {
+    if (!str) return '""'
+    return `"${String(str).replace(/"/g, '""')}"`
+  }
+
+  for (const p of projects || []) {
+    for (const m of p.milestones || []) {
+      rows.push(
+        [
+          escapeCsv(p.id),
+          escapeCsv(p.name),
+          escapeCsv(p.duration),
+          escapeCsv(m.weekLabel),
+          escapeCsv(m.title),
+          escapeCsv(m.status),
+          escapeCsv(m.achievementNote || ''),
+          escapeCsv(m.delayReason || ''),
+          escapeCsv(m.updatedAt || ''),
+          escapeCsv(m.updatedBy || ''),
+        ].join(','),
+      )
+    }
+  }
+  return rows.join('\n')
+}
+
 let cachedState = null
 
 async function loadState() {
@@ -149,7 +192,7 @@ async function loadState() {
     }
   }
 
-  // 3. Local file
+  // 3. Local persistent files (JSON and CSV)
   if (fs.existsSync(dataFilePath)) {
     try {
       const raw = fs.readFileSync(dataFilePath, 'utf-8')
@@ -185,11 +228,12 @@ async function saveState(projects) {
   }
   cachedState = payload
 
-  // 1. Local file
+  // 1. Write local JSON and CSV text files
   try {
     fs.writeFileSync(dataFilePath, JSON.stringify(payload, null, 2), 'utf-8')
+    fs.writeFileSync(csvFilePath, projectsToCsv(projects), 'utf-8')
   } catch (e) {
-    console.error('Failed to write local state file:', e.message)
+    console.error('Failed to write local state files:', e.message)
   }
 
   // 2. Upstash Redis
@@ -228,11 +272,54 @@ async function saveState(projects) {
             'progress-state.json': {
               content: JSON.stringify(payload, null, 2),
             },
+            'progress-report.csv': {
+              content: projectsToCsv(projects),
+            },
           },
         }),
       })
     } catch (e) {
       console.error('Gist save failed:', e.message)
+    }
+  }
+
+  // 4. GitHub direct repository file commit (if GITHUB_TOKEN set)
+  const ghToken = process.env.GITHUB_TOKEN
+  if (ghToken && !gistId) {
+    try {
+      const repoOwner = process.env.GITHUB_REPO_OWNER || 'shrishrhukkeri'
+      const repoName = process.env.GITHUB_REPO_NAME || 'rnsit-progress-dash'
+      const targetPath = 'src/data/defaultProjects.json'
+      const getUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${targetPath}`
+      const getRes = await fetch(getUrl, {
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          'User-Agent': 'rnsit-progress-dash',
+          Accept: 'application/vnd.github.v3+json',
+        },
+      })
+      let sha = null
+      if (getRes.ok) {
+        const fileInfo = await getRes.json()
+        sha = fileInfo.sha
+      }
+      const fileContent = Buffer.from(JSON.stringify(projects, null, 2), 'utf-8').toString('base64')
+      await fetch(getUrl, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          'User-Agent': 'rnsit-progress-dash',
+          'Content-Type': 'application/json',
+          Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify({
+          message: 'chore: persist milestone updates from student dashboard [skip ci]',
+          content: fileContent,
+          sha: sha || undefined,
+        }),
+      })
+    } catch (e) {
+      console.warn('GitHub repo commit failed:', e.message)
     }
   }
 
@@ -289,6 +376,23 @@ const server = http.createServer(async (req, res) => {
       }
     }
     res.writeHead(405, { Allow: 'GET, POST, PUT, OPTIONS' })
+    return res.end()
+  }
+
+  // CSV Report Export endpoint
+  if (pathname === '/api/export/csv' || pathname === '/api/export/csv/') {
+    if (req.method === 'GET') {
+      const state = await loadState()
+      const csv = projectsToCsv(state.projects)
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="rnsit-progress-report.csv"',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+      })
+      return res.end(csv)
+    }
+    res.writeHead(405, { Allow: 'GET, OPTIONS' })
     return res.end()
   }
 

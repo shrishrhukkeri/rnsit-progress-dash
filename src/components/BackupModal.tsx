@@ -36,6 +36,52 @@ export function BackupModal() {
     setFeedback({ type: 'ok', text: 'Backup downloaded successfully!' })
   }
 
+  const handleDownloadCsv = () => {
+    const headers = [
+      'Project ID',
+      'Project Name',
+      'Duration',
+      'Week Label',
+      'Milestone Title',
+      'Status',
+      'Achievement Note',
+      'Delay Reason',
+      'Updated At',
+      'Updated By',
+    ]
+    const rows = [headers.join(',')]
+    const escape = (s: any) => `"${String(s || '').replace(/"/g, '""')}"`
+
+    for (const p of projects || []) {
+      for (const m of p.milestones || []) {
+        rows.push(
+          [
+            escape(p.id),
+            escape(p.name),
+            escape(p.duration),
+            escape(m.weekLabel),
+            escape(m.title),
+            escape(m.status),
+            escape(m.achievementNote),
+            escape(m.delayReason),
+            escape(m.updatedAt),
+            escape(m.updatedBy),
+          ].join(','),
+        )
+      }
+    }
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv; charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `rnsit-progress-report-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setFeedback({ type: 'ok', text: 'CSV spreadsheet downloaded!' })
+  }
+
   const handleCopyBackup = async () => {
     try {
       const json = exportBackup()
@@ -170,7 +216,7 @@ export function BackupModal() {
         {/* Export Options */}
         <div style={{ margin: '14px 0' }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>Export Backup</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn primary"
@@ -178,6 +224,14 @@ export function BackupModal() {
               onClick={handleDownload}
             >
               Download JSON
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              style={{ padding: '10px 12px', fontSize: 13 }}
+              onClick={handleDownloadCsv}
+            >
+              Download CSV Report
             </button>
             <button
               type="button"
