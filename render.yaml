@@ -7,7 +7,7 @@ services:
     branch: main
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    autoDeployTrigger: commit
+    autoDeploy: true
     healthCheckPath: /health
 
   # Optional keep-alive (Render Cron Jobs require a paid plan).

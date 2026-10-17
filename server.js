@@ -39,10 +39,18 @@ function sendFile(res, filePath, method = 'GET') {
   const ext = path.extname(filePath).toLowerCase()
   const type = mime[ext] || 'application/octet-stream'
   const stat = fs.statSync(filePath)
+  const isHtml = ext === '.html'
+  const isHashedAsset = filePath.includes(`${path.sep}assets${path.sep}`)
+
   res.writeHead(200, {
     'Content-Type': type,
     'Content-Length': stat.size,
     'Access-Control-Allow-Origin': '*',
+    'Cache-Control': isHtml
+      ? 'no-cache, no-store, must-revalidate'
+      : isHashedAsset
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=3600',
   })
   if (method === 'HEAD') {
     res.end()
