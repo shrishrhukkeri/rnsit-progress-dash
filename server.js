@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, 'dist')
 const port = Number(process.env.PORT) || 4173
+const dataFilePath = path.join(__dirname, 'server-data.json')
+const seedFilePath = path.join(__dirname, 'src', 'data', 'defaultProjects.json')
 
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -25,7 +27,10 @@ function sendJson(res, status, body) {
   const payload = JSON.stringify(body)
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS, HEAD',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   })
   res.end(payload)
 }
@@ -37,6 +42,7 @@ function sendFile(res, filePath, method = 'GET') {
   res.writeHead(200, {
     'Content-Type': type,
     'Content-Length': stat.size,
+    'Access-Control-Allow-Origin': '*',
   })
   if (method === 'HEAD') {
     res.end()
@@ -45,24 +51,256 @@ function sendFile(res, filePath, method = 'GET') {
   fs.createReadStream(filePath).pipe(res)
 }
 
-const server = http.createServer((req, res) => {
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk
+      if (body.length > 5 * 1024 * 1024) {
+        req.destroy()
+        reject(new Error('Payload too large'))
+      }
+    })
+    req.on('end', () => {
+      if (!body.trim()) {
+        resolve({})
+        return
+      }
+      try {
+        resolve(JSON.parse(body))
+      } catch {
+        reject(new Error('Invalid JSON payload'))
+      }
+    })
+    req.on('error', reject)
+  })
+}
+
+function getSeedProjects() {
+  try {
+    if (fs.existsSync(seedFilePath)) {
+      return JSON.parse(fs.readFileSync(seedFilePath, 'utf-8'))
+    }
+  } catch (e) {
+    console.error('Error reading seed file:', e.message)
+  }
+  return []
+}
+
+let cachedState = null
+
+async function loadState() {
+  // 1. Upstash Redis REST
+  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REST_URL
+  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REST_TOKEN
+  if (upstashUrl && upstashToken) {
+    try {
+      const res = await fetch(`${upstashUrl.replace(/\/$/, '')}/get/rnsit_progress_state`, {
+        headers: { Authorization: `Bearer ${upstashToken}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.result) {
+          const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result
+          if (parsed && Array.isArray(parsed.projects)) {
+            cachedState = parsed
+            return { ...parsed, storage: 'upstash' }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Upstash fetch failed:', e.message)
+    }
+  }
+
+  // 2. GitHub Gist
+  const gistToken = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN
+  const gistId = process.env.GIST_ID
+  if (gistToken && gistId) {
+    try {
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        headers: {
+          Authorization: `Bearer ${gistToken}`,
+          'User-Agent': 'rnsit-progress-dash',
+          Accept: 'application/vnd.github.v3+json',
+        },
+      })
+      if (res.ok) {
+        const gist = await res.json()
+        const file = gist.files && (gist.files['progress-state.json'] || Object.values(gist.files)[0])
+        if (file && file.content) {
+          const parsed = JSON.parse(file.content)
+          if (parsed && Array.isArray(parsed.projects)) {
+            cachedState = parsed
+            return { ...parsed, storage: 'gist' }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('GitHub Gist fetch failed:', e.message)
+    }
+  }
+
+  // 3. Local file
+  if (fs.existsSync(dataFilePath)) {
+    try {
+      const raw = fs.readFileSync(dataFilePath, 'utf-8')
+      const parsed = JSON.parse(raw)
+      if (parsed && Array.isArray(parsed.projects)) {
+        cachedState = parsed
+        return { ...parsed, storage: 'file' }
+      }
+    } catch (e) {
+      console.warn('Local file read failed:', e.message)
+    }
+  }
+
+  // 4. Memory cache fallback
+  if (cachedState && Array.isArray(cachedState.projects)) {
+    return { ...cachedState, storage: 'memory' }
+  }
+
+  // 5. Default seed
+  const seed = getSeedProjects()
+  return {
+    projects: seed,
+    updatedAt: new Date().toISOString(),
+    isDefault: true,
+    storage: 'seed',
+  }
+}
+
+async function saveState(projects) {
+  const payload = {
+    projects,
+    updatedAt: new Date().toISOString(),
+  }
+  cachedState = payload
+
+  // 1. Local file
+  try {
+    fs.writeFileSync(dataFilePath, JSON.stringify(payload, null, 2), 'utf-8')
+  } catch (e) {
+    console.error('Failed to write local state file:', e.message)
+  }
+
+  // 2. Upstash Redis
+  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REST_URL
+  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REST_TOKEN
+  if (upstashUrl && upstashToken) {
+    try {
+      await fetch(`${upstashUrl.replace(/\/$/, '')}/set/rnsit_progress_state`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${upstashToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(JSON.stringify(payload)),
+      })
+    } catch (e) {
+      console.error('Upstash save failed:', e.message)
+    }
+  }
+
+  // 3. GitHub Gist
+  const gistToken = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN
+  const gistId = process.env.GIST_ID
+  if (gistToken && gistId) {
+    try {
+      await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${gistToken}`,
+          'User-Agent': 'rnsit-progress-dash',
+          'Content-Type': 'application/json',
+          Accept: 'application/vnd.github.v3+json',
+        },
+        body: JSON.stringify({
+          files: {
+            'progress-state.json': {
+              content: JSON.stringify(payload, null, 2),
+            },
+          },
+        }),
+      })
+    } catch (e) {
+      console.error('Gist save failed:', e.message)
+    }
+  }
+
+  return payload
+}
+
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
   const pathname = decodeURIComponent(url.pathname)
 
-  if (req.method === 'GET' && (pathname === '/health' || pathname === '/health/')) {
-    return sendJson(res, 200, {
-      status: 'ok',
-      service: 'rnsit-progress-dash',
-      uptime: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
+  // CORS Preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     })
+    return res.end()
   }
 
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
+  // Health check
+  if (pathname === '/health' || pathname === '/health/') {
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const state = await loadState()
+      return sendJson(res, 200, {
+        status: 'ok',
+        service: 'rnsit-progress-dash',
+        storage: state.storage || 'seed',
+        projectsCount: state.projects?.length || 0,
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+      })
+    }
     res.writeHead(405, { Allow: 'GET, HEAD' })
     return res.end()
   }
 
+  // GET State
+  if (pathname === '/api/state' || pathname === '/api/state/') {
+    if (req.method === 'GET') {
+      const state = await loadState()
+      return sendJson(res, 200, state)
+    }
+    if (req.method === 'POST' || req.method === 'PUT') {
+      try {
+        const body = await readJsonBody(req)
+        if (!body || !Array.isArray(body.projects)) {
+          return sendJson(res, 400, { ok: false, error: 'Expected { projects: [...] } array' })
+        }
+        const saved = await saveState(body.projects)
+        return sendJson(res, 200, { ok: true, savedAt: saved.updatedAt })
+      } catch (err) {
+        return sendJson(res, 400, { ok: false, error: err.message || 'Failed to save state' })
+      }
+    }
+    res.writeHead(405, { Allow: 'GET, POST, PUT, OPTIONS' })
+    return res.end()
+  }
+
+  // Reset to seed
+  if (pathname === '/api/reset' || pathname === '/api/reset/') {
+    if (req.method === 'POST') {
+      const seed = getSeedProjects()
+      const saved = await saveState(seed)
+      return sendJson(res, 200, { ok: true, message: 'Reset to seed state', savedAt: saved.updatedAt })
+    }
+    res.writeHead(405, { Allow: 'POST, OPTIONS' })
+    return res.end()
+  }
+
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { Allow: 'GET, HEAD, OPTIONS' })
+    return res.end()
+  }
+
+  // Static files in dist/
   const safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '')
   const candidate = path.join(distDir, safePath === '/' ? 'index.html' : safePath)
 

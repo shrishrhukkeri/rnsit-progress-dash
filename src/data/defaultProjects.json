@@ -1,0 +1,185 @@
+[
+  {
+    "id": "nexa",
+    "name": "NEXA",
+    "shortName": "NEXA",
+    "tagline": "Offline LoRa safety companion",
+    "duration": "4 weeks",
+    "teamHint": "App + hardware prototype",
+    "accent": "#F97316",
+    "accentSoft": "#FDBA74",
+    "endResult": "Field-ready demo kit with measured range uplift and offline SOS / group features",
+    "milestones": [
+      {
+        "id": "nexa-w1",
+        "title": "Baseline RF audit & range plan",
+        "theme": "Measure what you have; remove the unknowns",
+        "weekLabel": "Week 1",
+        "order": 1,
+        "status": "pending",
+        "exitCriteria": "Written baseline range report + prioritized fix list (top 5)"
+      },
+      {
+        "id": "nexa-w2",
+        "title": "Range enhancement + link reliability",
+        "theme": "Make distance real",
+        "weekLabel": "Week 2",
+        "order": 2,
+        "status": "pending",
+        "exitCriteria": "≥2× useful range vs baseline or ≥90% PDR at demo distance"
+      },
+      {
+        "id": "nexa-w3",
+        "title": "Feature completion (app ↔ prototype)",
+        "theme": "Group ping, SOS + relay, fall→SOS offline",
+        "weekLabel": "Week 3",
+        "order": 3,
+        "status": "pending",
+        "exitCriteria": "Outdoor walk with cellular off; SOS relayed via at least one hop"
+      },
+      {
+        "id": "nexa-w4",
+        "title": "Hardening & packaging",
+        "theme": "Showcase kit ready",
+        "weekLabel": "Week 4",
+        "order": 4,
+        "status": "pending",
+        "exitCriteria": "3-unit kit + runbook; outdoor stakeholder demo completed"
+      }
+    ]
+  },
+  {
+    "id": "concierge",
+    "name": "Concierge",
+    "shortName": "Hospital OS",
+    "tagline": "Hospital OS · RNS Hospital collab",
+    "duration": "8–12 weeks",
+    "teamHint": "4 people · ward pilot",
+    "accent": "#3D8BFF",
+    "accentSoft": "#9EC5FF",
+    "endResult": "Pilot-ready Hospital OS with hospital-backed live data on agreed pathway",
+    "milestones": [
+      {
+        "id": "conc-w12",
+        "title": "Hospital discovery & architecture lock",
+        "theme": "MoU, ward shadow, Demo vs Live modes",
+        "weekLabel": "Weeks 1–2",
+        "order": 1,
+        "status": "pending",
+        "exitCriteria": "Signed scope one-pager: systems in/out, success metrics, go-live ward"
+      },
+      {
+        "id": "conc-w34",
+        "title": "Identity, timeline & companion (live-backed)",
+        "theme": "One digital identity + care timeline",
+        "weekLabel": "Weeks 3–4",
+        "order": 2,
+        "status": "pending",
+        "exitCriteria": "Pilot/test patient visible end-to-end from hospital feed"
+      },
+      {
+        "id": "conc-w56",
+        "title": "IoMT, passive safety & escalation",
+        "theme": "Realtime exposure where hospital allows",
+        "weekLabel": "Weeks 5–6",
+        "order": 3,
+        "status": "pending",
+        "exitCriteria": "Live or near-live vital stream drives supervised escalation drill"
+      },
+      {
+        "id": "conc-w78",
+        "title": "Ops, discharge & MVP pilot gate",
+        "theme": "Hospital-ready MVP",
+        "weekLabel": "Weeks 7–8",
+        "order": 4,
+        "status": "pending",
+        "exitCriteria": "Live pathway + hospital timeline + realtime signal + security sign-off"
+      },
+      {
+        "id": "conc-w910",
+        "title": "Stretch: deepen realtime & reliability",
+        "theme": "Second feed, reconnect, alert tuning",
+        "weekLabel": "Weeks 9–10",
+        "order": 5,
+        "status": "pending",
+        "exitCriteria": "Hardened integration on second device class or ward feed"
+      },
+      {
+        "id": "conc-w1112",
+        "title": "Stretch: finance + expansion pack",
+        "theme": "Billing/RPM/analytics + roadmap",
+        "weekLabel": "Weeks 11–12",
+        "order": 6,
+        "status": "pending",
+        "exitCriteria": "Second use-case live or production integration proposal accepted"
+      }
+    ]
+  },
+  {
+    "id": "varchlearn",
+    "name": "VarchLearn",
+    "shortName": "VarchLearn",
+    "tagline": "Preference + mini-games mobile app",
+    "duration": "6 weeks",
+    "teamHint": "Expo RN · dual-track MVP",
+    "accent": "#38BDF8",
+    "accentSoft": "#7DD3FC",
+    "endResult": "Installable iOS/Android app on internal tracks — preference + 4 mini-games",
+    "milestones": [
+      {
+        "id": "vl-w1",
+        "title": "Scope lock & assessment engine",
+        "theme": "Preference ≠ performance (research PDF)",
+        "weekLabel": "Week 1",
+        "order": 1,
+        "status": "pending",
+        "exitCriteria": "Dual models compile; unit tests prove scores never mix"
+      },
+      {
+        "id": "vl-w2",
+        "title": "Core journey shell (mobile)",
+        "theme": "Onboarding → assessment shell on device",
+        "weekLabel": "Week 2",
+        "order": 2,
+        "status": "pending",
+        "exitCriteria": "Fresh install completes shell with dummy tasks on iOS + Android"
+      },
+      {
+        "id": "vl-w3",
+        "title": "Four mini-games",
+        "theme": "Visual · Listen · Read-Arrange · Build",
+        "weekLabel": "Week 3",
+        "order": 3,
+        "status": "pending",
+        "exitCriteria": "Playable 4-game block under ~3 minutes on mid phone"
+      },
+      {
+        "id": "vl-w4",
+        "title": "Preference, results & study plan",
+        "theme": "Dual outputs + safe language",
+        "weekLabel": "Week 4",
+        "order": 4,
+        "status": "pending",
+        "exitCriteria": "Full vertical slice: onboarding → dual results → plan"
+      },
+      {
+        "id": "vl-w5",
+        "title": "Polish, QA, privacy, store packaging",
+        "theme": "Ship quality",
+        "weekLabel": "Week 5",
+        "order": 5,
+        "status": "pending",
+        "exitCriteria": "TestFlight + Play internal; QA matrix green"
+      },
+      {
+        "id": "vl-w6",
+        "title": "Pilot readiness & handoff",
+        "theme": "Controlled campus/school pilot",
+        "weekLabel": "Week 6",
+        "order": 6,
+        "status": "pending",
+        "exitCriteria": "Internal-track app + pilot pack shipped"
+      }
+    ]
+  }
+]

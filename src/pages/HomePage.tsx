@@ -5,7 +5,15 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { useAppStore } from '../store/useAppStore'
 
 export function HomePage() {
-  const { projects, projectStats, isAuthenticated, setLoginOpen, logout } = useAppStore()
+  const {
+    projects,
+    projectStats,
+    isAuthenticated,
+    setLoginOpen,
+    logout,
+    setBackupModalOpen,
+    syncStatus,
+  } = useAppStore()
 
   return (
     <div className="page">
@@ -14,6 +22,34 @@ export function HomePage() {
           <h1>Dashboard</h1>
         </div>
         <div className="top-actions">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setBackupModalOpen(true)}
+            title="Cloud Sync & Data Backup"
+            aria-label="Cloud Sync & Data Backup"
+            style={{ position: 'relative' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+            </svg>
+            <span
+              style={{
+                position: 'absolute',
+                bottom: 5,
+                right: 5,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor:
+                  syncStatus === 'synced'
+                    ? 'var(--success)'
+                    : syncStatus === 'syncing'
+                      ? 'var(--accent)'
+                      : 'var(--warning)',
+              }}
+            />
+          </button>
           <ThemeToggle />
           <button
             type="button"
