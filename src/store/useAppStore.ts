@@ -118,23 +118,59 @@ export function hasUserEdits(projects?: Project[] | null): boolean {
   return false
 }
 
+export function extractWeekNumbers(weekLabel: string): { start: number; end: number } {
+  if (!weekLabel || typeof weekLabel !== 'string') {
+    return { start: Number.MAX_SAFE_INTEGER, end: Number.MAX_SAFE_INTEGER }
+  }
+  const matches = weekLabel.match(/\d+(?:\.\d+)?/g)
+  if (!matches || matches.length === 0) {
+    return { start: Number.MAX_SAFE_INTEGER, end: Number.MAX_SAFE_INTEGER }
+  }
+  const start = parseFloat(matches[0])
+  const end = matches.length > 1 ? parseFloat(matches[1]) : start
+  return { start, end }
+}
+
+export function compareMilestonesByWeek(a: Milestone, b: Milestone): number {
+  const aWeek = extractWeekNumbers(a.weekLabel)
+  const bWeek = extractWeekNumbers(b.weekLabel)
+
+  if (aWeek.start !== bWeek.start) {
+    return aWeek.start - bWeek.start
+  }
+  if (aWeek.end !== bWeek.end) {
+    return aWeek.end - bWeek.end
+  }
+  if (typeof a.order === 'number' && typeof b.order === 'number' && a.order !== b.order) {
+    return a.order - b.order
+  }
+  return (a.title || '').localeCompare(b.title || '')
+}
+
+export function sortMilestonesByWeek(milestones: Milestone[]): Milestone[] {
+  if (!Array.isArray(milestones) || milestones.length === 0) return []
+  return [...milestones]
+    .sort(compareMilestonesByWeek)
+    .map((m, index) => ({
+      ...m,
+      order: index + 1,
+    }))
+}
+
 export function mergeProjectsWithSeed(saved: Project[] | undefined): Project[] {
   return seedProjects.map((seed) => {
     const existing = saved?.find((p) => p.id === seed.id)
     if (!existing) return structuredClone(seed)
-    const milestones =
+    const rawMilestones =
       existing.milestones?.length > 0
-        ? existing.milestones.map((m, i) => ({
-            ...m,
-            order: typeof m.order === 'number' ? m.order : i + 1,
-          }))
+        ? existing.milestones
         : structuredClone(seed.milestones)
     return {
       ...seed,
       duration: existing.duration?.trim() ? existing.duration : seed.duration,
       teamHint: existing.teamHint?.trim() ? existing.teamHint : seed.teamHint,
       endResult: existing.endResult?.trim() ? existing.endResult : seed.endResult,
-      milestones,
+      milestones: sortMilestonesByWeek(rawMilestones),
     }
   })
 }
@@ -295,11 +331,13 @@ export const useAppStore = create<AppState>()(
           updatedBy: get().editorName || 'Student',
         }
 
-        const nextProjects = get().projects.map((p) =>
-          p.id === projectId
-            ? { ...p, milestones: [...p.milestones, milestone] }
-            : p,
-        )
+        const nextProjects = get().projects.map((p) => {
+          if (p.id !== projectId) return p
+          return {
+            ...p,
+            milestones: sortMilestonesByWeek([...p.milestones, milestone]),
+          }
+        })
         set({ projects: nextProjects })
         triggerSave(nextProjects, set)
         return { ok: true, id }
@@ -317,10 +355,8 @@ export const useAppStore = create<AppState>()(
 
         const nextProjects = get().projects.map((p) => {
           if (p.id !== projectId) return p
-          const remaining = p.milestones
-            .filter((m) => m.id !== milestoneId)
-            .map((m, i) => ({ ...m, order: i + 1 }))
-          return { ...p, milestones: remaining }
+          const remaining = p.milestones.filter((m) => m.id !== milestoneId)
+          return { ...p, milestones: sortMilestonesByWeek(remaining) }
         })
 
         set({
@@ -354,33 +390,34 @@ export const useAppStore = create<AppState>()(
 
         const nextProjects = get().projects.map((p) => {
           if (p.id !== projectId) return p
+          const updated = p.milestones.map((m) => {
+            if (m.id !== milestoneId) return m
+            const nextStatus = (patch.status ?? m.status) as MilestoneStatus
+            return {
+              ...m,
+              ...patch,
+              title: patch.title?.trim() ?? m.title,
+              theme: patch.theme?.trim() ?? m.theme,
+              weekLabel: patch.weekLabel?.trim() ?? m.weekLabel,
+              exitCriteria: patch.exitCriteria?.trim() ?? m.exitCriteria,
+              status: nextStatus,
+              delayReason:
+                nextStatus === 'delayed'
+                  ? patch.delayReason ?? m.delayReason
+                  : nextStatus === 'completed'
+                    ? undefined
+                    : patch.delayReason ?? m.delayReason,
+              achievementNote:
+                nextStatus === 'completed'
+                  ? patch.achievementNote ?? m.achievementNote
+                  : patch.achievementNote ?? m.achievementNote,
+              updatedAt: now,
+              updatedBy: editor,
+            }
+          })
           return {
             ...p,
-            milestones: p.milestones.map((m) => {
-              if (m.id !== milestoneId) return m
-              const nextStatus = (patch.status ?? m.status) as MilestoneStatus
-              return {
-                ...m,
-                ...patch,
-                title: patch.title?.trim() ?? m.title,
-                theme: patch.theme?.trim() ?? m.theme,
-                weekLabel: patch.weekLabel?.trim() ?? m.weekLabel,
-                exitCriteria: patch.exitCriteria?.trim() ?? m.exitCriteria,
-                status: nextStatus,
-                delayReason:
-                  nextStatus === 'delayed'
-                    ? patch.delayReason ?? m.delayReason
-                    : nextStatus === 'completed'
-                      ? undefined
-                      : patch.delayReason ?? m.delayReason,
-                achievementNote:
-                  nextStatus === 'completed'
-                    ? patch.achievementNote ?? m.achievementNote
-                    : patch.achievementNote ?? m.achievementNote,
-                updatedAt: now,
-                updatedBy: editor,
-              }
-            }),
+            milestones: sortMilestonesByWeek(updated),
           }
         })
 

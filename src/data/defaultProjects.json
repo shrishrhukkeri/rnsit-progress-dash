@@ -4,7 +4,7 @@
     "name": "NEXA",
     "shortName": "NEXA",
     "tagline": "Offline LoRa safety companion",
-    "duration": "4 weeks",
+    "duration": "5 weeks",
     "teamHint": "App + hardware prototype",
     "accent": "#F97316",
     "accentSoft": "#FDBA74",
@@ -12,12 +12,15 @@
     "milestones": [
       {
         "id": "nexa-w1",
-        "title": "Baseline RF audit & range plan",
-        "theme": "Measure what you have; remove the unknowns",
+        "title": "Assembly",
+        "theme": "Assembling electronic components & flashing firmware",
         "weekLabel": "Week 1",
         "order": 1,
-        "status": "pending",
-        "exitCriteria": "Written baseline range report + prioritized fix list (top 5)"
+        "status": "completed",
+        "exitCriteria": "",
+        "achievementNote": "Done",
+        "updatedAt": "2026-10-17T10:56:53.023Z",
+        "updatedBy": "Student Team"
       },
       {
         "id": "nexa-w2",
@@ -25,8 +28,12 @@
         "theme": "Make distance real",
         "weekLabel": "Week 2",
         "order": 2,
-        "status": "pending",
-        "exitCriteria": "≥2× useful range vs baseline or ≥90% PDR at demo distance"
+        "status": "in_progress",
+        "exitCriteria": "≥2× useful range vs baseline or ≥90% PDR at demo distance",
+        "achievementNote": "",
+        "delayReason": "",
+        "updatedAt": "2026-10-17T10:58:09.470Z",
+        "updatedBy": "Student Team"
       },
       {
         "id": "nexa-w3",
@@ -39,12 +46,27 @@
       },
       {
         "id": "nexa-w4",
-        "title": "Hardening & packaging",
-        "theme": "Showcase kit ready",
+        "title": "Range & Feature Testing",
+        "theme": "",
         "weekLabel": "Week 4",
         "order": 4,
         "status": "pending",
-        "exitCriteria": "3-unit kit + runbook; outdoor stakeholder demo completed"
+        "exitCriteria": "",
+        "achievementNote": "",
+        "delayReason": "",
+        "updatedAt": "2026-10-17T10:57:41.887Z",
+        "updatedBy": "Student Team"
+      },
+      {
+        "id": "nexa-custom-mvcaa6sh",
+        "title": "Full Working Prototype",
+        "theme": "Team-added milestone",
+        "weekLabel": "Week 5",
+        "order": 5,
+        "status": "pending",
+        "exitCriteria": "Define exit criteria with the team",
+        "updatedAt": "2026-10-17T10:58:48.161Z",
+        "updatedBy": "Student Team"
       }
     ]
   },
@@ -53,65 +75,100 @@
     "name": "Concierge",
     "shortName": "Hospital OS",
     "tagline": "Hospital OS · RNS Hospital collab",
-    "duration": "8–12 weeks",
+    "duration": "8 weeks",
     "teamHint": "4 people · ward pilot",
     "accent": "#3D8BFF",
     "accentSoft": "#9EC5FF",
     "endResult": "Pilot-ready Hospital OS with hospital-backed live data on agreed pathway",
     "milestones": [
       {
-        "id": "conc-w12",
-        "title": "Hospital discovery & architecture lock",
-        "theme": "MoU, ward shadow, Demo vs Live modes",
-        "weekLabel": "Weeks 1–2",
+        "id": "concierge-custom-mvcqj01t",
+        "title": "Foundation & Administrator Dashboard",
+        "theme": "1.1 Project Setup & Branding | 1.2 Admin Dashboard  |   1.3 Hospital Operations Views",
+        "weekLabel": "Week 1",
         "order": 1,
-        "status": "pending",
-        "exitCriteria": "Signed scope one-pager: systems in/out, success metrics, go-live ward"
+        "status": "completed",
+        "exitCriteria": "RNS Hospital branding, admin dashboard, and core hospital operations views work correctly.",
+        "updatedAt": "2026-10-17T19:02:28.759Z",
+        "updatedBy": "Student Team",
+        "achievementNote": "Established the CONCIERGE project foundation, applied RNS Hospital branding, and implemented the administrator dashboard with core hospital operations views, navigation, and supporting UI components. Verified code quality with linting and a successful production build."
       },
       {
-        "id": "conc-w34",
-        "title": "Identity, timeline & companion (live-backed)",
-        "theme": "One digital identity + care timeline",
-        "weekLabel": "Weeks 3–4",
+        "id": "concierge-custom-mvcqpzgy",
+        "title": "Patient Portal",
+        "theme": "2.1 Patient Dashboard | 2.2 Appointments & Medical Records | 2.3 Assistance & Family Contacts",
+        "weekLabel": "Week 2",
         "order": 2,
         "status": "pending",
-        "exitCriteria": "Pilot/test patient visible end-to-end from hospital feed"
+        "exitCriteria": "Patients can view appointments, medical records, prescriptions, and submit assistance requests.",
+        "updatedAt": "2026-10-17T18:38:59.026Z",
+        "updatedBy": "Student Team"
       },
       {
-        "id": "conc-w56",
-        "title": "IoMT, passive safety & escalation",
-        "theme": "Realtime exposure where hospital allows",
-        "weekLabel": "Weeks 5–6",
+        "id": "concierge-custom-mvcqrhxn",
+        "title": "Doctor Portal",
+        "theme": "3.1 Doctor Dashboard | 3.2 Patient Records | 3.3 Schedule & Availability",
+        "weekLabel": "Week 3",
         "order": 3,
         "status": "pending",
-        "exitCriteria": "Live or near-live vital stream drives supervised escalation drill"
+        "exitCriteria": "Doctors can view assigned patients, medical records, and schedules, and manage their availability.",
+        "updatedAt": "2026-10-17T18:40:09.611Z",
+        "updatedBy": "Student Team"
       },
       {
-        "id": "conc-w78",
-        "title": "Ops, discharge & MVP pilot gate",
-        "theme": "Hospital-ready MVP",
-        "weekLabel": "Weeks 7–8",
+        "id": "concierge-custom-mvcqs2wx",
+        "title": "Nurse Portal",
+        "theme": "4.1 Nurse Dashboard | 4.2 Medication & Care Schedules | 4.3 Assistance & Reassignment",
+        "weekLabel": "Week 4",
         "order": 4,
         "status": "pending",
-        "exitCriteria": "Live pathway + hospital timeline + realtime signal + security sign-off"
+        "exitCriteria": "Nurses can view assignments, care schedules, and patient assistance requests.",
+        "updatedAt": "2026-10-17T18:40:36.801Z",
+        "updatedBy": "Student Team"
       },
       {
-        "id": "conc-w910",
-        "title": "Stretch: deepen realtime & reliability",
-        "theme": "Second feed, reconnect, alert tuning",
-        "weekLabel": "Weeks 9–10",
+        "id": "concierge-custom-mvcrgdcj",
+        "title": "Support Staff Portal",
+        "theme": "5.1 Staff Dashboard | 5.2 Cleaning & Assistance Tasks | 5.3 Task Coordination",
+        "weekLabel": "Week 5",
         "order": 5,
         "status": "pending",
-        "exitCriteria": "Hardened integration on second device class or ward feed"
+        "exitCriteria": "Support staff can receive, manage, and complete cleaning and assistance tasks.",
+        "updatedAt": "2026-10-17T18:59:30.067Z",
+        "updatedBy": "Student Team"
       },
       {
-        "id": "conc-w1112",
-        "title": "Stretch: finance + expansion pack",
-        "theme": "Billing/RPM/analytics + roadmap",
-        "weekLabel": "Weeks 11–12",
+        "id": "concierge-custom-mvcqslvj",
+        "title": "Connected Hospital Workflows",
+        "theme": "6.1 Patient Assistance Workflow | 6.2 Doctor Schedule Conflict Resolution | 6.3 Autonomous Nurse Reassignment",
+        "weekLabel": "Week 6",
         "order": 6,
         "status": "pending",
-        "exitCriteria": "Second use-case live or production integration proposal accepted"
+        "exitCriteria": "Patient requests, doctor scheduling conflicts, and nurse reassignments work across connected role portals.",
+        "updatedAt": "2026-10-17T18:41:01.375Z",
+        "updatedBy": "Student Team"
+      },
+      {
+        "id": "concierge-custom-mvcqt4fg",
+        "title": "Shared Backend & Synchronization",
+        "theme": "7.1 Backend & Database | 7.2 Cross-Portal Data Sync | 7.3 Data Persistence & Validation",
+        "weekLabel": "Week 7",
+        "order": 7,
+        "status": "pending",
+        "exitCriteria": "All role portals share consistent data, and changes persist across sessions.",
+        "updatedAt": "2026-10-17T18:41:25.420Z",
+        "updatedBy": "Student Team"
+      },
+      {
+        "id": "concierge-custom-mvcqtprj",
+        "title": "Testing & Funding Demo",
+        "theme": "8.1 Workflow Testing | 8.2 UI Polish & Bug Fixes | 8.3 Funding Demo Preparation",
+        "weekLabel": "Week 8",
+        "order": 8,
+        "status": "pending",
+        "exitCriteria": "All role portals and workflows are tested, polished, and ready for the funding demo.",
+        "updatedAt": "2026-10-17T18:41:53.071Z",
+        "updatedBy": "Student Team"
       }
     ]
   },
@@ -132,8 +189,11 @@
         "theme": "Preference ≠ performance (research PDF)",
         "weekLabel": "Week 1",
         "order": 1,
-        "status": "pending",
-        "exitCriteria": "Dual models compile; unit tests prove scores never mix"
+        "status": "completed",
+        "exitCriteria": "Dual models compile; unit tests prove scores never mix",
+        "achievementNote": "Completed the research review of activities for all four VARK modalities: Visual, Aural, Read/Write, and Kinaesthetic. Reviewed relevant research papers, identified suitable interactive mini-games, and documented key findings and limitations. ",
+        "updatedAt": "2026-10-17T13:41:02.619Z",
+        "updatedBy": "Student Team"
       },
       {
         "id": "vl-w2",

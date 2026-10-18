@@ -4,7 +4,7 @@ import { AddMilestoneModal } from '../components/AddMilestoneModal'
 import { ProgressRing } from '../components/ProgressRing'
 import { ThemeToggle } from '../components/ThemeToggle'
 import type { ProjectId } from '../types'
-import { useAppStore } from '../store/useAppStore'
+import { sortMilestonesByWeek, useAppStore } from '../store/useAppStore'
 
 export function ProjectPage() {
   const { id } = useParams()
@@ -42,7 +42,7 @@ export function ProjectPage() {
   }
 
   const stats = projectStats(project.id)
-  const sorted = [...project.milestones].sort((a, b) => a.order - b.order)
+  const sorted = sortMilestonesByWeek(project.milestones)
 
   const saveDuration = () => {
     const res = updateProjectDuration(project.id, durationDraft)

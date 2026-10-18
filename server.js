@@ -97,7 +97,44 @@ function getSeedProjects() {
   return []
 }
 
+function extractWeekNumbers(weekLabel) {
+  if (!weekLabel || typeof weekLabel !== 'string') {
+    return { start: Number.MAX_SAFE_INTEGER, end: Number.MAX_SAFE_INTEGER }
+  }
+  const matches = weekLabel.match(/\d+(?:\.\d+)?/g)
+  if (!matches || matches.length === 0) {
+    return { start: Number.MAX_SAFE_INTEGER, end: Number.MAX_SAFE_INTEGER }
+  }
+  const start = parseFloat(matches[0])
+  const end = matches.length > 1 ? parseFloat(matches[1]) : start
+  return { start, end }
+}
+
+function compareMilestonesByWeek(a, b) {
+  const aWeek = extractWeekNumbers(a.weekLabel)
+  const bWeek = extractWeekNumbers(b.weekLabel)
+  if (aWeek.start !== bWeek.start) return aWeek.start - bWeek.start
+  if (aWeek.end !== bWeek.end) return aWeek.end - bWeek.end
+  if (typeof a.order === 'number' && typeof b.order === 'number' && a.order !== b.order) {
+    return a.order - b.order
+  }
+  return (a.title || '').localeCompare(b.title || '')
+}
+
+function normalizeProjectsOrder(projects) {
+  if (!Array.isArray(projects)) return []
+  return projects.map((p) => {
+    if (!Array.isArray(p.milestones)) return p
+    const sorted = [...p.milestones].sort(compareMilestonesByWeek).map((m, i) => ({
+      ...m,
+      order: i + 1,
+    }))
+    return { ...p, milestones: sorted }
+  })
+}
+
 function projectsToCsv(projects) {
+  const normalized = normalizeProjectsOrder(projects)
   const headers = [
     'Project ID',
     'Project Name',
@@ -117,7 +154,7 @@ function projectsToCsv(projects) {
     return `"${String(str).replace(/"/g, '""')}"`
   }
 
-  for (const p of projects || []) {
+  for (const p of normalized || []) {
     for (const m of p.milestones || []) {
       rows.push(
         [
@@ -198,8 +235,8 @@ async function loadState() {
       const raw = fs.readFileSync(dataFilePath, 'utf-8')
       const parsed = JSON.parse(raw)
       if (parsed && Array.isArray(parsed.projects)) {
-        cachedState = parsed
-        return { ...parsed, storage: 'file' }
+        cachedState = { ...parsed, projects: normalizeProjectsOrder(parsed.projects) }
+        return { ...cachedState, storage: 'file' }
       }
     } catch (e) {
       console.warn('Local file read failed:', e.message)
@@ -208,11 +245,11 @@ async function loadState() {
 
   // 4. Memory cache fallback
   if (cachedState && Array.isArray(cachedState.projects)) {
-    return { ...cachedState, storage: 'memory' }
+    return { ...cachedState, projects: normalizeProjectsOrder(cachedState.projects), storage: 'memory' }
   }
 
   // 5. Default seed
-  const seed = getSeedProjects()
+  const seed = normalizeProjectsOrder(getSeedProjects())
   return {
     projects: seed,
     updatedAt: new Date().toISOString(),
@@ -222,8 +259,9 @@ async function loadState() {
 }
 
 async function saveState(projects) {
+  const normalized = normalizeProjectsOrder(projects)
   const payload = {
-    projects,
+    projects: normalized,
     updatedAt: new Date().toISOString(),
   }
   cachedState = payload
@@ -231,7 +269,7 @@ async function saveState(projects) {
   // 1. Write local JSON and CSV text files
   try {
     fs.writeFileSync(dataFilePath, JSON.stringify(payload, null, 2), 'utf-8')
-    fs.writeFileSync(csvFilePath, projectsToCsv(projects), 'utf-8')
+    fs.writeFileSync(csvFilePath, projectsToCsv(normalized), 'utf-8')
   } catch (e) {
     console.error('Failed to write local state files:', e.message)
   }
